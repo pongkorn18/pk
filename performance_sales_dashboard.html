@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Performance & Sales Interactive Dashboard</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f5f8ff; --card: #ffffff; --ink: #172033; --muted: #667085; --line: #e7edf7;
+      --blue: #2563eb; --sky: #0ea5e9; --green: #16a34a; --amber: #f59e0b; --red: #ef4444;
+      --indigo: #4f46e5; --purple:#7c3aed; --shadow: 0 16px 35px rgba(31, 41, 55, .08);
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:'Noto Sans Thai', system-ui, sans-serif; background: radial-gradient(circle at top left, #e0f2fe 0, transparent 30%), var(--bg); color:var(--ink); }
+    .app { max-width: 1440px; margin:0 auto; padding:28px; }
+    .hero { display:flex; justify-content:space-between; gap:20px; align-items:flex-start; background:linear-gradient(135deg,#0f172a,#1d4ed8 55%,#06b6d4); color:white; border-radius:28px; padding:28px; box-shadow:var(--shadow); overflow:hidden; position:relative; }
+    .hero:after { content:""; position:absolute; width:360px; height:360px; right:-120px; top:-120px; border-radius:50%; background:rgba(255,255,255,.13); }
+    .hero h1 { margin:0 0 8px; font-size:clamp(25px,3vw,42px); line-height:1.15; }
+    .hero p { margin:0; color:#dbeafe; max-width:780px; }
+    .badge { display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.24); border-radius:999px; padding:8px 14px; font-size:13px; white-space:nowrap; }
+    .filters { margin:20px 0; background:rgba(255,255,255,.78); backdrop-filter:blur(12px); border:1px solid var(--line); border-radius:22px; padding:16px; display:grid; grid-template-columns: repeat(6, minmax(120px,1fr)); gap:12px; box-shadow:var(--shadow); }
+    label { display:block; color:var(--muted); font-size:12px; margin:0 0 6px; font-weight:700; }
+    select,input { width:100%; border:1px solid var(--line); background:white; border-radius:14px; padding:10px 12px; font-family:inherit; color:var(--ink); outline:none; }
+    button { border:none; border-radius:14px; padding:11px 14px; font-family:inherit; cursor:pointer; font-weight:700; }
+    .btn-primary { background:var(--blue); color:white; } .btn-light { background:#eef4ff; color:#1d4ed8; }
+    .kpis { display:grid; grid-template-columns:repeat(6,1fr); gap:14px; margin-bottom:18px; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:22px; padding:18px; box-shadow:var(--shadow); }
+    .kpi-title { font-size:12px; color:var(--muted); font-weight:700; margin-bottom:6px; }
+    .kpi-value { font-size:25px; font-weight:800; letter-spacing:-.02em; }
+    .kpi-sub { color:var(--muted); font-size:12px; margin-top:5px; }
+    .grid { display:grid; grid-template-columns:1.4fr 1fr; gap:18px; }
+    .grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px; margin-top:18px; }
+    .chart-title { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:12px; }
+    .chart-title h2 { font-size:18px; margin:0; } .chart-title span { color:var(--muted); font-size:12px; }
+    .svg-wrap { width:100%; height:300px; }
+    .table-wrap { overflow:auto; max-height:430px; border:1px solid var(--line); border-radius:16px; }
+    table { width:100%; border-collapse:separate; border-spacing:0; min-width:820px; background:white; }
+    th,td { padding:11px 12px; text-align:left; border-bottom:1px solid var(--line); font-size:13px; }
+    th { position:sticky; top:0; background:#f8fbff; z-index:1; color:#475467; font-weight:800; }
+    td.num, th.num { text-align:right; }
+    .pill { display:inline-flex; padding:4px 10px; border-radius:999px; background:#eef4ff; color:#1d4ed8; font-weight:700; font-size:12px; }
+    .legend { display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; }
+    .legend-item { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); }
+    .dot { width:10px; height:10px; border-radius:50%; }
+    .insight { display:grid; gap:10px; }
+    .insight-item { display:flex; gap:10px; padding:12px; border-radius:16px; background:#f8fbff; border:1px solid var(--line); }
+    .icon { width:34px; height:34px; display:grid; place-items:center; border-radius:12px; background:#e0ecff; flex:0 0 auto; }
+    .bar-row { display:grid; grid-template-columns:110px 1fr 82px; align-items:center; gap:10px; margin:11px 0; }
+    .bar-bg { height:12px; border-radius:999px; background:#edf2fb; overflow:hidden; }
+    .bar-fill { height:100%; border-radius:999px; background:linear-gradient(90deg,var(--blue),var(--sky)); }
+    .footer { margin-top:18px; color:var(--muted); font-size:12px; text-align:center; }
+    @media (max-width:1100px) { .filters { grid-template-columns:repeat(3,1fr); } .kpis { grid-template-columns:repeat(3,1fr); } .grid,.grid-3 { grid-template-columns:1fr; } }
+    @media (max-width:720px) { .app { padding:14px; } .hero { flex-direction:column; border-radius:20px; } .filters,.kpis { grid-template-columns:1fr; } .kpi-value { font-size:22px; } }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script id="sales-data" type="application/json">[{"orderId": 1, "month": "กุมภาพันธ์", "date": "2023-02-03", "dateDisplay": "03/02/2023", "customer": "มานพ ธรรมรักษา", "district": "เมืองเชียงใหม่", "phoneMasked": "089xxx3214", "category": "Hot", "product": "Latte", "qty": 1.0, "unitPrice": 45.0, "amount": 45.0}, {"orderId": 2, "month": "กุมภาพันธ์", "date": "2023-02-03", "dateDisplay": "03/02/2023", "customer": "ปิยะดา เจริญไทย", "district": "หางดง", "phoneMasked": "081xxx4299", "category": "Ice", "product": "Mocha", "qty": 3.0, "unitPrice": 65.0, "amount": 195.0}, {"orderId": 3, "month": "กุมภาพันธ์", "date": "2023-02-03", "dateDisplay": "03/02/2023", "customer": "เหมือนฝัน เปี่ยมสุข", "district": "หางดง", "phoneMasked": "089xxx1456", "category": "Ice", "product": "Latte", "qty": 2.0, "unitPrice": 60.0, "amount": 120.0}, {"orderId": 4, "month": "กุมภาพันธ์", "date": "2023-02-03", "dateDisplay": "03/02/2023", "customer": "วรการ พากเพียร", "district": "เมืองเชียงใหม่", "phoneMasked": "088xxx7711", "category": "Frappe", "product": "Latte", "qty": 2.0, "unitPrice": 65.0, "amount": 130.0}, {"orderId": 5, "month": "กุมภาพันธ์", "date": "2023-02-09", "dateDisplay": "09/02/2023", "customer": "พรเพ็ญ มโนใจ", "district": "สารภี", "phoneMasked": "081xxx3621", "category": "Hot", "product": "Americano", "qty": 2.0, "unitPrice": 35.0, "amount": 70.0}, {"orderId": 6, "month": "กุมภาพันธ์", "date": "2023-02-09", "dateDisplay": "09/02/2023", "customer": "มานพ ธรรมรักษา", "district": "เมืองเชียงใหม่", "phoneMasked": "089xxx3214", "category": "Hot", "product": "Latte", "qty": 2.0, "unitPrice": 45.0, "amount": 90.0}, {"orderId": 7, "month": "กุมภาพันธ์", "date": "2023-02-09", "dateDisplay": "09/02/2023", "customer": "เหมือนฝัน เปี่ยมสุข", "district": "หางดง", "phoneMasked": "089xxx1456", "category": "Hot", "product": "Latte", "qty": 1.0, "unitPrice": 45.0, "amount": 45.0}, {"orderId": 8, "month": "กุมภาพันธ์", "date": "2023-02-16", "dateDisplay": "16/02/2023", "customer": "ปิยะดา เจริญไทย", "district": "หางดง", "phoneMasked": "081xxx4299", "category": "Hot", "product": "Americano", "qty": 4.0, "unitPrice": 65.0, "amount": 260.0}, {"orderId": 9, "month": "กุมภาพันธ์", "date": "2023-02-16", "dateDisplay": "16/02/2023", "customer": "หยาดทิพย์ สุขสมบูรณ์", "district": "สารภี", "phoneMasked": "087xxx6478", "category": "Frappe", "product": "Mocha", "qty": 2.0, "unitPrice": 70.0, "amount": 140.0}, {"orderId": 10, "month": "กุมภาพันธ์", "date": "2023-02-16", "dateDisplay": "16/02/2023", "customer": "เหมือนฝัน เปี่ยมสุข", "district": "หางดง", "phoneMasked": "089xxx1456", "category": "Hot", "product": "Latte", "qty": 1.0, "unitPrice": 45.0, "amount": 45.0}, {"orderId": 11, "month": "กุมภาพันธ์", "date": "2023-02-16", "dateDisplay": "16/02/2023", "customer": "สันติ ธรรมชัย", "district": "เมืองเชียงใหม่", "phoneMasked": "086xxx6474", "category": "Ice", "product": "Cappuccino", "qty": 2.0, "unitPrice": 60.0, "amount": 120.0}, {"orderId": 12, "month": "กุมภาพันธ์", "date": "2023-02-16", "dateDisplay": "16/02/2023", "customer": "มงคล มานะการ", "district": "สารภี", "phoneMasked": "081xxx5132", "category": "Hot", "product": "Latte", "qty": 3.0, "unitPrice": 45.0, "amount": 135.0}, {"orderId": 13, "month": "กุมภาพันธ์", "date": "2023-02-16", "dateDisplay": "16/02/2023", "customer": "วรการ พากเพียร", "district": "เมืองเชียงใหม่", "phoneMasked": "088xxx7711", "category": "Ice", "product": "Latte", "qty": 1.0, "unitPrice": 65.0, "amount": 65.0}, {"orderId": 14, "month": "มีนาคม", "date": "2023-03-05", "dateDisplay": "05/03/2023", "customer": "ปิยะดา เจริญไทย", "district": "หางดง", "phoneMasked": "081xxx4299", "category": "Hot", "product": "Americano", "qty": 3.0, "unitPrice": 35.0, "amount": 105.0}, {"orderId": 15, "month": "มีนาคม", "date": "2023-03-05", "dateDisplay": "05/03/2023", "customer": "เหมือนฝัน เปี่ยมสุข", "district": "หางดง", "phoneMasked": "089xxx1456", "category": "Ice", "product": "Mocha", "qty": 2.0, "unitPrice": 65.0, "amount": 130.0}, {"orderId": 16, "month": "มีนาคม", "date": "2023-03-05", "dateDisplay": "05/03/2023", "customer": "พรเพ็ญ มโนใจ", "district": "สารภี", "phoneMasked": "081xxx3621", "category": "Ice", "product": "Americano", "qty": 3.0, "unitPrice": 45.0, "amount": 135.0}, {"orderId": 17, "month": "มีนาคม", "date": "2023-03-05", "dateDisplay": "05/03/2023", "customer": "มานพ ธรรมรักษา", "district": "เมืองเชียงใหม่", "phoneMasked": "089xxx3214", "category": "Hot", "product": "Latte", "qty": 2.0, "unitPrice": 45.0, "amount": 90.0}, {"orderId": 18, "month": "มีนาคม", "date": "2023-03-10", "dateDisplay": "10/03/2023", "customer": "เสมอใจ ทรงอารมย์", "district": "สันกำแพง", "phoneMasked": "081xxx4398", "category": "Ice", "product": "Mocha", "qty": 2.0, "unitPrice": 65.0, "amount": 130.0}, {"orderId": 19, "month": "มีนาคม", "date": "2023-03-10", "dateDisplay": "10/03/2023", "customer": "วรการ พากเพียร", "district": "เมืองเชียงใหม่", "phoneMasked": "088xxx7711", "category": "Ice", "product": "Latte", "qty": 3.0, "unitPrice": 65.0, "amount": 195.0}, {"orderId": 20, "month": "มีนาคม", "date": "2023-03-10", "dateDisplay": "10/03/2023", "customer": "หยาดทิพย์ สุขสมบูรณ์", "district": "สารภี", "phoneMasked": "087xxx6478", "category": "Ice", "product": "Mocha", "qty": 2.0, "unitPrice": 65.0, "amount": 130.0}, {"orderId": 21, "month": "มีนาคม", "date": "2023-03-20", "dateDisplay": "20/03/2023", "customer": "เหมือนฝัน เปี่ยมสุข", "district": "หางดง", "phoneMasked": "089xxx1456", "category": "Frappe", "product": "Mocha", "qty": 2.0, "unitPrice": 70.0, "amount": 140.0}, {"orderId": 22, "month": "มีนาคม", "date": "2023-03-20", "dateDisplay": "20/03/2023", "customer": "สันติ ธรรมชัย", "district": "เมืองเชียงใหม่", "phoneMasked": "086xxx6474", "category": "Ice", "product": "Latte", "qty": 2.0, "unitPrice": 60.0, "amount": 120.0}, {"orderId": 23, "month": "มีนาคม", "date": "2023-03-25", "dateDisplay": "25/03/2023", "customer": "พรเพ็ญ มโนใจ", "district": "สารภี", "phoneMasked": "081xxx3621", "category": "Hot", "product": "Americano", "qty": 2.0, "unitPrice": 35.0, "amount": 70.0}, {"orderId": 24, "month": "มีนาคม", "date": "2023-03-25", "dateDisplay": "25/03/2023", "customer": "มงคล มานะการ", "district": "สารภี", "phoneMasked": "081xxx5132", "category": "Frappe", "product": "Latte", "qty": 2.0, "unitPrice": 65.0, "amount": 130.0}, {"orderId": 25, "month": "มีนาคม", "date": "2023-03-25", "dateDisplay": "25/03/2023", "customer": "ปราณี สนธิยา", "district": "สันกำแพง", "phoneMasked": "089xxx8545", "category": "Ice", "product": "Latte", "qty": 4.0, "unitPrice": 65.0, "amount": 260.0}, {"orderId": 26, "month": "เมษายน", "date": "2023-04-02", "dateDisplay": "02/04/2023", "customer": "มานพ ธรรมรักษา", "district": "เมืองเชียงใหม่", "phoneMasked": "089xxx3214", "category": "Ice", "product": "Latte", "qty": 3.0, "unitPrice": 65.0, "amount": 195.0}, {"orderId": 27, "month": "เมษายน", "date": "2023-04-02", "dateDisplay": "02/04/2023", "customer": "สันติ ธรรมชัย", "district": "เมืองเชียงใหม่", "phoneMasked": "086xxx6474", "category": "Ice", "product": "Cappuccino", "qty": 2.0, "unitPrice": 60.0, "amount": 120.0}, {"orderId": 28, "month": "เมษายน", "date": "2023-04-02", "dateDisplay": "02/04/2023", "customer": "เหมือนฝัน เปี่ยมสุข", "district": "หางดง", "phoneMasked": "089xxx1456", "category": "Frappe", "product": "Mocha", "qty": 2.0, "unitPrice": 70.0, "amount": 140.0}, {"orderId": 29, "month": "เมษายน", "date": "2023-04-02", "dateDisplay": "02/04/2023", "customer": "ปิยะดา เจริญไทย", "district": "หางดง", "phoneMasked": "081xxx4299", "category": "Hot", "product": "Americano", "qty": 2.0, "unitPrice": 35.0, "amount": 70.0}, {"orderId": 30, "month": "เมษายน", "date": "2023-04-12", "dateDisplay": "12/04/2023", "customer": "เสมอใจ ทรงอารมย์", "district": "สันกำแพง", "phoneMasked": "081xxx4398", "category": "Frappe", "product": "Mocha", "qty": 3.0, "unitPrice": 70.0, "amount": 210.0}, {"orderId": 31, "month": "เมษายน", "date": "2023-04-12", "dateDisplay": "12/04/2023", "customer": "มงคล มานะการ", "district": "สารภี", "phoneMasked": "081xxx5132", "category": "Ice", "product": "Latte", "qty": 3.0, "unitPrice": 65.0, "amount": 195.0}, {"orderId": 32, "month": "เมษายน", "date": "2023-04-12", "dateDisplay": "12/04/2023", "customer": "หยาดทิพย์ สุขสมบูรณ์", "district": "สารภี", "phoneMasked": "087xxx6478", "category": "Ice", "product": "Cappuccino", "qty": 1.0, "unitPrice": 65.0, "amount": 65.0}, {"orderId": 33, "month": "เมษายน", "date": "2023-04-21", "dateDisplay": "21/04/2023", "customer": "วรการ พากเพียร", "district": "เมืองเชียงใหม่", "phoneMasked": "088xxx7711", "category": "Hot", "product": "Latte", "qty": 2.0, "unitPrice": 45.0, "amount": 90.0}, {"orderId": 34, "month": "เมษายน", "date": "2023-04-21", "dateDisplay": "21/04/2023", "customer": "เหมือนฝัน เปี่ยมสุข", "district": "หางดง", "phoneMasked": "089xxx1456", "category": "Ice", "product": "Mocha", "qty": 4.0, "unitPrice": 65.0, "amount": 260.0}, {"orderId": 35, "month": "เมษายน", "date": "2023-04-21", "dateDisplay": "21/04/2023", "customer": "ปิยะดา เจริญไทย", "district": "หางดง", "phoneMasked": "081xxx4299", "category": "Frappe", "product": "Cappuccino", "qty": 2.0, "unitPrice": 80.0, "amount": 160.0}, {"orderId": 36, "month": "เมษายน", "date": "2023-04-21", "dateDisplay": "21/04/2023", "customer": "สันติ ธรรมชัย", "district": "เมืองเชียงใหม่", "phoneMasked": "086xxx6474", "category": "Frappe", "product": "Cappuccino", "qty": 1.0, "unitPrice": 80.0, "amount": 80.0}, {"orderId": 37, "month": "เมษายน", "date": "2023-04-21", "dateDisplay": "21/04/2023", "customer": "ปราณี สนธิยา", "district": "สันกำแพง", "phoneMasked": "089xxx8545", "category": "Hot", "product": "Latte", "qty": 2.0, "unitPrice": 45.0, "amount": 90.0}, {"orderId": 38, "month": "เมษายน", "date": "2023-04-21", "dateDisplay": "21/04/2023", "customer": "มานพ ธรรมรักษา", "district": "เมืองเชียงใหม่", "phoneMasked": "089xxx3214", "category": "Ice", "product": "Mocha", "qty": 2.0, "unitPrice": 65.0, "amount": 130.0}, {"orderId": 39, "month": "เมษายน", "date": "2023-04-29", "dateDisplay": "29/04/2023", "customer": "เหมือนฝัน เปี่ยมสุข", "district": "หางดง", "phoneMasked": "089xxx1456", "category": "Ice", "product": "Mocha", "qty": 2.0, "unitPrice": 65.0, "amount": 130.0}, {"orderId": 40, "month": "เมษายน", "date": "2023-04-29", "dateDisplay": "29/04/2023", "customer": "เสมอใจ ทรงอารมย์", "district": "สันกำแพง", "phoneMasked": "081xxx4398", "category": "Frappe", "product": "Mocha", "qty": 2.0, "unitPrice": 70.0, "amount": 140.0}]</script>
+  <script type="text/babel">
+    const rawData = JSON.parse(document.getElementById('sales-data').textContent);
+    const COLORS = ['#2563eb','#0ea5e9','#16a34a','#f59e0b','#7c3aed','#ef4444'];
+    const monthOrder = {'มกราคม':1,'กุมภาพันธ์':2,'มีนาคม':3,'เมษายน':4,'พฤษภาคม':5,'มิถุนายน':6,'กรกฎาคม':7,'สิงหาคม':8,'กันยายน':9,'ตุลาคม':10,'พฤศจิกายน':11,'ธันวาคม':12};
+    const fmt = new Intl.NumberFormat('th-TH');
+    const money = v => fmt.format(Math.round(v)) + ' บาท';
+    const uniq = arr => [...new Set(arr)].filter(Boolean);
+    const sum = (arr, key) => arr.reduce((a,b)=>a+(+b[key]||0),0);
+    const groupBy = (arr, key, valueKey='amount') => Object.entries(arr.reduce((acc, row)=>{
+      const k = row[key] || 'ไม่ระบุ'; acc[k] = (acc[k]||0) + (+row[valueKey]||0); return acc;
+    },{})).map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value);
+    const groupCount = (arr, key) => Object.entries(arr.reduce((acc, row)=>{ const k=row[key]||'ไม่ระบุ'; acc[k]=(acc[k]||0)+1; return acc;},{})).map(([name,value])=>({name,value}));
+    const getMax = arr => Math.max(1, ...arr.map(d=>d.value));
+
+    function KPI({title,value,sub}) { return <div className="card"><div className="kpi-title">{title}</div><div className="kpi-value">{value}</div><div className="kpi-sub">{sub}</div></div>; }
+    function Select({label,value,onChange,options}) { return <div><label>{label}</label><select value={value} onChange={e=>onChange(e.target.value)}><option value="ทั้งหมด">ทั้งหมด</option>{options.map(o=><option key={o} value={o}>{o}</option>)}</select></div>; }
+
+    function BarChart({data, label='ยอดขาย'}) {
+      const W=820,H=285,pad={l:58,r:18,t:12,b:48}, max=getMax(data);
+      const bw=(W-pad.l-pad.r)/Math.max(1,data.length);
+      return <svg viewBox={`0 0 ${W} ${H}`} className="svg-wrap" role="img" aria-label={label}>
+        <line x1={pad.l} y1={H-pad.b} x2={W-pad.r} y2={H-pad.b} stroke="#d9e2f3" />
+        {[0,.25,.5,.75,1].map(t=>{ const y=H-pad.b-t*(H-pad.t-pad.b); return <g key={t}><line x1={pad.l} y1={y} x2={W-pad.r} y2={y} stroke="#eef2fa"/><text x="8" y={y+4} fontSize="12" fill="#667085">{fmt.format(Math.round(max*t))}</text></g> })}
+        {data.map((d,i)=>{ const h=(d.value/max)*(H-pad.t-pad.b); const x=pad.l+i*bw+bw*.18; const y=H-pad.b-h; return <g key={d.name}><rect x={x} y={y} width={bw*.64} height={h} rx="10" fill={COLORS[i%COLORS.length]}><title>{d.name}: {money(d.value)}</title></rect><text x={x+bw*.32} y={H-pad.b+22} textAnchor="middle" fontSize="12" fill="#475467">{d.name}</text><text x={x+bw*.32} y={y-7} textAnchor="middle" fontSize="12" fill="#172033" fontWeight="700">{fmt.format(d.value)}</text></g> })}
+      </svg>;
+    }
+
+    function DonutChart({data}) {
+      const total=data.reduce((a,b)=>a+b.value,0)||1; let acc=0; const cx=150,cy=150,r=95,sw=36;
+      const segs=data.map((d,i)=>{ const start=acc/total*2*Math.PI; acc+=d.value; const end=acc/total*2*Math.PI; const large=(end-start)>Math.PI?1:0; const x1=cx+r*Math.cos(start-Math.PI/2), y1=cy+r*Math.sin(start-Math.PI/2), x2=cx+r*Math.cos(end-Math.PI/2), y2=cy+r*Math.sin(end-Math.PI/2); return {...d,i,path:`M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`}; });
+      return <div><svg viewBox="0 0 300 300" className="svg-wrap" style={{height:260}}>{segs.map(s=><path key={s.name} d={s.path} fill="none" stroke={COLORS[s.i%COLORS.length]} strokeWidth={sw} strokeLinecap="round"><title>{s.name}: {money(s.value)}</title></path>)}<text x="150" y="142" textAnchor="middle" fontSize="16" fill="#667085">ยอดขายรวม</text><text x="150" y="172" textAnchor="middle" fontSize="24" fontWeight="800" fill="#172033">{money(total)}</text></svg><div className="legend">{data.map((d,i)=><div className="legend-item" key={d.name}><span className="dot" style={{background:COLORS[i%COLORS.length]}}></span>{d.name} · {Math.round(d.value/total*100)}%</div>)}</div></div>
+    }
+
+    function RankingBars({data}) { const max=getMax(data); return <div>{data.map((d,i)=><div className="bar-row" key={d.name}><b>{i+1}. {d.name}</b><div className="bar-bg"><div className="bar-fill" style={{width:(d.value/max*100)+'%'}}></div></div><span style={{textAlign:'right',fontWeight:800}}>{money(d.value)}</span></div>)}</div>; }
+
+    function App() {
+      const [month,setMonth]=React.useState('ทั้งหมด'), [category,setCategory]=React.useState('ทั้งหมด'), [product,setProduct]=React.useState('ทั้งหมด'), [district,setDistrict]=React.useState('ทั้งหมด'), [search,setSearch]=React.useState('');
+      const reset=()=>{setMonth('ทั้งหมด');setCategory('ทั้งหมด');setProduct('ทั้งหมด');setDistrict('ทั้งหมด');setSearch('');};
+      const months=uniq(rawData.map(d=>d.month)).sort((a,b)=>(monthOrder[a]||99)-(monthOrder[b]||99));
+      const filtered=rawData.filter(d=>(month==='ทั้งหมด'||d.month===month)&&(category==='ทั้งหมด'||d.category===category)&&(product==='ทั้งหมด'||d.product===product)&&(district==='ทั้งหมด'||d.district===district)&&(!search||[d.customer,d.product,d.district,d.category].join(' ').toLowerCase().includes(search.toLowerCase())));
+      const totalSales=sum(filtered,'amount'), totalQty=sum(filtered,'qty'), orders=filtered.length, avg=orders?totalSales/orders:0, customers=uniq(filtered.map(d=>d.customer)).length;
+      const productSales=groupBy(filtered,'product'); const catSales=groupBy(filtered,'category'); const districtSales=groupBy(filtered,'district');
+      const monthly=months.map(m=>({name:m, value:sum(filtered.filter(d=>d.month===m),'amount')}));
+      const bestMonth=[...monthly].sort((a,b)=>b.value-a.value)[0]||{name:'-',value:0};
+      const bestProduct=productSales[0]||{name:'-',value:0};
+      const bestDistrict=districtSales[0]||{name:'-',value:0};
+      const topCustomers=groupBy(filtered,'customer').slice(0,5);
+      const csv=()=>{
+        const header=['orderId','date','customer','district','category','product','qty','unitPrice','amount'];
+        const lines=[header.join(','),...filtered.map(r=>header.map(k=>'"'+String(r[k]).replaceAll('"','""')+'"').join(','))];
+        const blob=new Blob([lines.join('
+')],{type:'text/csv;charset=utf-8;'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='filtered_sales.csv'; a.click(); URL.revokeObjectURL(url);
+      };
+      return <main className="app">
+        <section className="hero"><div><h1>Performance & Sales Dashboard</h1><p>แดชบอร์ดเชิงโต้ตอบสำหรับผู้บริหาร สรุปยอดขาย ประสิทธิภาพสินค้า พื้นที่ลูกค้า และรายการคำสั่งซื้อจากไฟล์ dataSetUnit3.xlsx</p></div><div className="badge">📊 ข้อมูล {rawData.length} รายการ · ใช้งานบน HTML</div></section>
+        <section className="filters">
+          <Select label="เดือน" value={month} onChange={setMonth} options={months} />
+          <Select label="ประเภทสินค้า" value={category} onChange={setCategory} options={uniq(rawData.map(d=>d.category))} />
+          <Select label="สินค้า" value={product} onChange={setProduct} options={uniq(rawData.map(d=>d.product))} />
+          <Select label="พื้นที่ลูกค้า" value={district} onChange={setDistrict} options={uniq(rawData.map(d=>d.district))} />
+          <div><label>ค้นหา</label><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="ชื่อลูกค้า/สินค้า/พื้นที่" /></div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,alignItems:'end'}}><button className="btn-light" onClick={reset}>ล้างตัวกรอง</button><button className="btn-primary" onClick={csv}>Export CSV</button></div>
+        </section>
+        <section className="kpis">
+          <KPI title="ยอดขายรวม" value={money(totalSales)} sub="หลังปรับตามตัวกรอง" />
+          <KPI title="จำนวนคำสั่งซื้อ" value={fmt.format(orders)} sub="รายการขายทั้งหมด" />
+          <KPI title="จำนวนแก้ว/ชิ้น" value={fmt.format(totalQty)} sub="รวมจำนวนสั่งซื้อ" />
+          <KPI title="ยอดขายเฉลี่ยต่อบิล" value={money(avg)} sub="Total Sales / Orders" />
+          <KPI title="ลูกค้าที่ซื้อ" value={fmt.format(customers)} sub="จำนวนรายชื่อไม่ซ้ำ" />
+          <KPI title="สินค้าขายดี" value={bestProduct.name} sub={money(bestProduct.value)} />
+        </section>
+        <section className="grid">
+          <div className="card"><div className="chart-title"><div><h2>แนวโน้มยอดขายรายเดือน</h2><span>เปรียบเทียบยอดขายเพื่อดูช่วงเวลาที่สร้างรายได้สูง</span></div><span className="pill">Best: {bestMonth.name}</span></div><BarChart data={monthly} /></div>
+          <div className="card"><div className="chart-title"><div><h2>สัดส่วนยอดขายตามประเภทสินค้า</h2><span>ช่วยพิจารณากลุ่มสินค้าที่ควรผลักดัน</span></div></div><DonutChart data={catSales} /></div>
+        </section>
+        <section className="grid-3">
+          <div className="card"><div className="chart-title"><div><h2>อันดับยอดขายตามสินค้า</h2><span>เมนูที่สร้างรายได้สูงสุด</span></div></div><RankingBars data={productSales} /></div>
+          <div className="card"><div className="chart-title"><div><h2>ยอดขายตามพื้นที่ลูกค้า</h2><span>ระบุพื้นที่ลูกค้าหลักเพื่อการตลาด</span></div><span className="pill">Top: {bestDistrict.name}</span></div><RankingBars data={districtSales} /></div>
+          <div className="card"><div className="chart-title"><div><h2>Executive Insights</h2><span>ข้อค้นพบที่สนับสนุนการตัดสินใจ</span></div></div><div className="insight">
+            <div className="insight-item"><span className="icon">🏆</span><div><b>เดือนยอดขายสูงสุด: {bestMonth.name}</b><br/><span className="kpi-sub">สร้างยอดขาย {money(bestMonth.value)} จากข้อมูลที่เลือก</span></div></div>
+            <div className="insight-item"><span className="icon">☕</span><div><b>เมนูเด่น: {bestProduct.name}</b><br/><span className="kpi-sub">ควรใช้เป็นเมนูหลักในการทำโปรโมชันหรือ Bundle</span></div></div>
+            <div className="insight-item"><span className="icon">📍</span><div><b>พื้นที่ลูกค้าหลัก: {bestDistrict.name}</b><br/><span className="kpi-sub">เหมาะสำหรับเจาะกลุ่มลูกค้าและวางแผนช่องทางจำหน่าย</span></div></div>
+            <div className="insight-item"><span className="icon">👥</span><div><b>ลูกค้าสำคัญ</b><br/><span className="kpi-sub">{topCustomers.map(c=>c.name).join(', ') || '-'}</span></div></div>
+          </div></div>
+        </section>
+        <section className="card" style={{marginTop:18}}><div className="chart-title"><div><h2>รายละเอียดคำสั่งซื้อ</h2><span>ตารางข้อมูลที่กรองได้ ใช้ตรวจสอบรายการขายรายบิล</span></div><span className="pill">{fmt.format(filtered.length)} รายการ</span></div><div className="table-wrap"><table><thead><tr><th>วันที่</th><th>ลูกค้า</th><th>พื้นที่</th><th>ประเภท</th><th>สินค้า</th><th className="num">จำนวน</th><th className="num">ราคา/หน่วย</th><th className="num">ยอดขาย</th></tr></thead><tbody>{filtered.sort((a,b)=>a.orderId-b.orderId).map(r=><tr key={r.orderId}><td>{r.dateDisplay}</td><td>{r.customer}</td><td>{r.district}</td><td><span className="pill">{r.category}</span></td><td>{r.product}</td><td className="num">{fmt.format(r.qty)}</td><td className="num">{money(r.unitPrice)}</td><td className="num"><b>{money(r.amount)}</b></td></tr>)}</tbody></table></div></section>
+        <div className="footer">จัดทำจากไฟล์ dataSetUnit3.xlsx · Dashboard นี้ประมวลผลภายในเบราว์เซอร์ และสามารถเปิดใช้ได้ทันทีผ่านไฟล์ HTML</div>
+      </main>
+    }
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
